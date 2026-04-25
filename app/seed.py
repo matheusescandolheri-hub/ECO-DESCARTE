@@ -1,26 +1,41 @@
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import services
-from app.models import Categoria, PontoColeta
+
+
+HORARIO_ECOPONTOS_CURITIBA = "Segunda a sábado, das 8h às 12h e das 13h às 17h"
+FONTE_ECOPONTOS_CURITIBA = "Prefeitura de Curitiba - Ecopontos - Descarte correto de resíduos"
+TIPOS_ECOPONTO_MISTO = (
+    "caliça, madeira, resíduo vegetal, móveis, eletroeletrônicos, óleo de cozinha, "
+    "gordura usada"
+)
+TIPOS_PARQUE_GOMM = "materiais recicláveis, óleo de cozinha, gordura usada"
 
 
 CATEGORIAS_INICIAIS = [
     {
         "nome": "Resíduo perigoso",
-        "descricao": "Materiais que podem causar contaminação ou risco à saúde.",
+        "descricao": "Materiais que oferecem risco ao meio ambiente ou à saúde quando descartados incorretamente.",
     },
     {
         "nome": "Resíduo reciclável",
-        "descricao": "Materiais que podem retornar à cadeia produtiva.",
+        "descricao": "Materiais que podem passar por processo de reciclagem e retornar à cadeia produtiva.",
     },
     {
         "nome": "Resíduo eletrônico",
-        "descricao": "Equipamentos e componentes eletrônicos sem uso.",
+        "descricao": "Equipamentos, peças ou componentes eletrônicos sem uso ou danificados.",
     },
     {
         "nome": "Resíduo doméstico especial",
-        "descricao": "Itens comuns em casa que exigem descarte orientado.",
+        "descricao": "Materiais gerados em ambiente doméstico que exigem descarte orientado.",
+    },
+    {
+        "nome": "Resíduo de construção civil",
+        "descricao": "Restos de pequenas obras, reformas e reparos, como caliça, madeira e entulho.",
+    },
+    {
+        "nome": "Resíduo vegetal",
+        "descricao": "Restos de poda, jardinagem e limpeza de áreas verdes.",
     },
 ]
 
@@ -29,101 +44,192 @@ RESIDUOS_INICIAIS = [
     {
         "nome": "Pilha",
         "categoria": "Resíduo perigoso",
-        "orientacao_descarte": "Leve pilhas usadas a coletores específicos em mercados, escolas ou ecopontos. Não descarte no lixo comum.",
+        "orientacao_descarte": "Não descartar no lixo comum. Armazenar em local seco e entregar em ponto de coleta adequado.",
         "risco_ambiental": "Alto",
-        "mensagem_educativa": "Pilhas podem liberar metais pesados no solo e na água quando descartadas incorretamente.",
+        "mensagem_educativa": "Pilhas podem conter metais pesados e contaminar o solo e a água.",
     },
     {
         "nome": "Bateria",
         "categoria": "Resíduo perigoso",
-        "orientacao_descarte": "Entregue baterias em pontos autorizados, assistências técnicas, lojas parceiras ou ecopontos.",
+        "orientacao_descarte": "Não descartar no lixo comum. Entregar em pontos de coleta específicos ou estabelecimentos autorizados.",
         "risco_ambiental": "Alto",
-        "mensagem_educativa": "Baterias exigem logística reversa para reduzir contaminação e reaproveitar materiais.",
+        "mensagem_educativa": "Baterias podem liberar substâncias tóxicas quando descartadas incorretamente.",
     },
     {
         "nome": "Óleo de cozinha",
         "categoria": "Resíduo doméstico especial",
-        "orientacao_descarte": "Armazene o óleo frio em garrafa PET fechada e entregue em um ponto de coleta. Não jogue na pia, no ralo ou no solo.",
+        "orientacao_descarte": "Não jogar na pia, no solo ou no ralo. Armazenar em garrafa fechada e entregar em ponto de coleta.",
         "risco_ambiental": "Médio",
-        "mensagem_educativa": "Um pequeno volume de óleo pode contaminar muita água e prejudicar redes de esgoto.",
+        "mensagem_educativa": "Um litro de óleo pode contaminar grandes volumes de água.",
     },
     {
         "nome": "Medicamento vencido",
         "categoria": "Resíduo perigoso",
-        "orientacao_descarte": "Leve medicamentos vencidos ou sem uso a farmácias e unidades autorizadas para descarte seguro.",
+        "orientacao_descarte": "Não jogar no lixo comum, pia ou vaso sanitário. Entregar em farmácias ou pontos autorizados.",
         "risco_ambiental": "Alto",
-        "mensagem_educativa": "Medicamentos no lixo comum ou no vaso sanitário podem contaminar água e afetar seres vivos.",
+        "mensagem_educativa": "Medicamentos descartados incorretamente podem contaminar a água e prejudicar a saúde pública.",
     },
     {
         "nome": "Vidro",
         "categoria": "Resíduo reciclável",
-        "orientacao_descarte": "Separe o vidro limpo, embale cacos com segurança e identifique o material antes de entregar à coleta seletiva.",
+        "orientacao_descarte": "Separar com cuidado, embalar se estiver quebrado e encaminhar para reciclagem.",
         "risco_ambiental": "Médio",
-        "mensagem_educativa": "O cuidado no descarte do vidro evita acidentes e favorece a reciclagem.",
+        "mensagem_educativa": "O vidro pode ser reciclado, mas deve ser separado com segurança para evitar acidentes.",
     },
     {
         "nome": "Lixo eletrônico",
         "categoria": "Resíduo eletrônico",
-        "orientacao_descarte": "Encaminhe equipamentos eletrônicos a ecopontos, campanhas de coleta ou estabelecimentos parceiros.",
+        "orientacao_descarte": "Encaminhar equipamentos e componentes eletrônicos a ecopontos ou locais de logística reversa.",
         "risco_ambiental": "Alto",
-        "mensagem_educativa": "Eletrônicos contêm componentes reaproveitáveis e substâncias que não devem ir para aterros comuns.",
+        "mensagem_educativa": "Equipamentos eletrônicos possuem metais e componentes que exigem descarte adequado.",
+    },
+    {
+        "nome": "Caliça",
+        "categoria": "Resíduo de construção civil",
+        "orientacao_descarte": "Separar de outros resíduos e encaminhar para Ecoponto autorizado.",
+        "risco_ambiental": "Médio",
+        "mensagem_educativa": "O descarte irregular de resíduos de construção prejudica vias públicas, rios e terrenos.",
+    },
+    {
+        "nome": "Madeira",
+        "categoria": "Resíduo de construção civil",
+        "orientacao_descarte": "Separar e encaminhar para Ecoponto que receba resíduos de construção e móveis.",
+        "risco_ambiental": "Médio",
+        "mensagem_educativa": "Madeiras podem ser reaproveitadas ou destinadas corretamente quando separadas.",
+    },
+    {
+        "nome": "Móvel inservível",
+        "categoria": "Resíduo doméstico especial",
+        "orientacao_descarte": "Encaminhar para Ecoponto ou serviço autorizado de coleta.",
+        "risco_ambiental": "Médio",
+        "mensagem_educativa": "Móveis descartados em vias públicas prejudicam a cidade e favorecem problemas sanitários.",
+    },
+    {
+        "nome": "Resíduo vegetal",
+        "categoria": "Resíduo vegetal",
+        "orientacao_descarte": "Encaminhar restos de poda e jardinagem para Ecoponto autorizado.",
+        "risco_ambiental": "Baixo",
+        "mensagem_educativa": "Resíduos vegetais podem ser destinados corretamente e até reaproveitados em compostagem.",
     },
 ]
 
 
-PONTOS_INICIAIS = [
+ECOPONTOS_CURITIBA = [
     {
-        "nome_local": "EcoPonto Central",
-        "endereco": "Rua das Árvores, 120",
-        "bairro": "Centro",
-        "cidade": "São Paulo",
-        "tipo_residuo_aceito": "Pilha, Bateria, Vidro",
+        "nome_local": "Ecoponto Caiuá",
+        "endereco": "Av. Juscelino Kubitschek de Oliveira - Ld, 6800",
+        "bairro": "Cidade Industrial de Curitiba",
+        "observacao": "Esquina com a Estrada Velha do Barigui.",
     },
     {
-        "nome_local": "Farmácia Vida",
-        "endereco": "Avenida Saúde, 88",
-        "bairro": "Jardim América",
-        "cidade": "São Paulo",
-        "tipo_residuo_aceito": "Medicamento vencido",
+        "nome_local": "Ecoponto Cajuru",
+        "endereco": "R. Neusa Vieira Bet, 255",
+        "bairro": "Cajuru",
+        "observacao": "Esquina com a R. Augusto Forbeck.",
     },
     {
-        "nome_local": "Mercado Verde",
-        "endereco": "Rua do Comércio, 45",
-        "bairro": "Centro",
-        "cidade": "Campinas",
-        "tipo_residuo_aceito": "Óleo de cozinha, Pilha",
+        "nome_local": "Ecoponto Campo de Santana",
+        "endereco": "R. Teresa de Freitas Tavares, 331",
+        "bairro": "Campo de Santana",
+        "observacao": "Regional Tatuquara.",
     },
     {
-        "nome_local": "Centro de Reciclagem Tech",
-        "endereco": "Avenida Inovação, 500",
-        "bairro": "Tecnopolo",
-        "cidade": "Campinas",
-        "tipo_residuo_aceito": "Lixo eletrônico, Bateria",
+        "nome_local": "Ecoponto CIC",
+        "endereco": "R. Orestes Thá, 1765",
+        "bairro": "Cidade Industrial de Curitiba",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Érico Veríssimo",
+        "endereco": "R. Cap. Amin Mosse, 557",
+        "bairro": "Alto Boqueirão",
+        "observacao": "Anexo à Praça Claudio Manoel Loyola e Silva.",
+    },
+    {
+        "nome_local": "Ecoponto Guaçuí",
+        "endereco": "R. Maria Augusta, 1",
+        "bairro": "Sítio Cercado",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Icaraí",
+        "endereco": "R. Olindo Caetani, 1330",
+        "bairro": "Uberaba",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Jandaia",
+        "endereco": "R. Jorn. José Pedro dos Santos - Pedrinho, 801",
+        "bairro": "Ganchinho",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Metropolitano",
+        "endereco": "R. da Independência, 340",
+        "bairro": "São Braz",
+        "observacao": "Ecoponto da Regional Santa Felicidade.",
+    },
+    {
+        "nome_local": "Ecoponto Sambaqui",
+        "endereco": "R. Rad. Souza Moreno, 30",
+        "bairro": "Sítio Cercado",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Vila Nova",
+        "endereco": "R. Ten. Cel. Vilagran Cabrita, 2495",
+        "bairro": "Alto Boqueirão",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Vila Verde",
+        "endereco": "R. Lydio Paulo Bettega, 200",
+        "bairro": "Cidade Industrial de Curitiba",
+        "observacao": "Ecoponto misto.",
+    },
+    {
+        "nome_local": "Ecoponto Parque Gomm",
+        "endereco": "R. Hermes Fontes, 204",
+        "bairro": "Batel",
+        "tipo_residuo_aceito": TIPOS_PARQUE_GOMM,
+        "observacao": "Ecoponto voltado a materiais recicláveis, óleo de cozinha e gordura pós-consumo.",
     },
 ]
+
+
+PONTOS_EXEMPLO_ANTIGOS = {
+    "EcoPonto Central",
+    "Farmácia Vida",
+    "Mercado Verde",
+    "Centro de Reciclagem Tech",
+}
+
+
+def desativar_pontos_exemplo_antigos(db: Session) -> None:
+    for nome in PONTOS_EXEMPLO_ANTIGOS:
+        ponto = services.buscar_ponto_por_nome(db, nome)
+        if ponto:
+            ponto.ativo = False
+    db.commit()
 
 
 def seed_data(db: Session) -> None:
     for dados in CATEGORIAS_INICIAIS:
-        services.obter_ou_criar_categoria(db, dados["nome"], dados["descricao"])
+        services.get_or_create_categoria(db, dados["nome"], dados["descricao"])
 
     for dados in RESIDUOS_INICIAIS:
-        if not any(
-            services.normalizar_busca(residuo.nome) == services.normalizar_busca(dados["nome"])
-            for residuo in services.listar_residuos(db)
-        ):
-            services.criar_residuo(db, dados)
+        services.get_or_create_residuo(db, dados)
 
-    pontos_existentes = db.scalars(select(PontoColeta)).all()
-    for dados in PONTOS_INICIAIS:
-        ja_existe = any(
-            services.normalizar_busca(ponto.nome_local) == services.normalizar_busca(dados["nome_local"])
-            and services.normalizar_busca(ponto.tipo_residuo_aceito)
-            == services.normalizar_busca(dados["tipo_residuo_aceito"])
-            for ponto in pontos_existentes
-        )
-        if not ja_existe:
-            db.add(PontoColeta(**dados))
+    for dados in ECOPONTOS_CURITIBA:
+        dados_ponto = {
+            "cidade": "Curitiba",
+            "telefone": "156",
+            "horario_funcionamento": HORARIO_ECOPONTOS_CURITIBA,
+            "fonte_dados": FONTE_ECOPONTOS_CURITIBA,
+            "tipo_residuo_aceito": TIPOS_ECOPONTO_MISTO,
+            "ativo": True,
+            **dados,
+        }
+        services.upsert_ponto_coleta(db, dados_ponto)
 
-    db.commit()
-
+    desativar_pontos_exemplo_antigos(db)

@@ -43,6 +43,12 @@
                     <strong>{{ ponto.nome_local }}</strong>
                     <span>{{ ponto.endereco }}</span>
                     <span>{{ ponto.bairro }} · {{ ponto.cidade }}</span>
+                    {% if ponto.telefone %}
+                        <span>Telefone: {{ ponto.telefone }}</span>
+                    {% endif %}
+                    {% if ponto.horario_funcionamento %}
+                        <span>{{ ponto.horario_funcionamento }}</span>
+                    {% endif %}
                     <small>Aceita: {{ ponto.tipo_residuo_aceito }}</small>
                 </article>
             {% endfor %}
@@ -76,4 +82,3 @@
     <a class="button button-secondary" href="/historico">Ver histórico</a>
 </section>
 {% endblock %}
-

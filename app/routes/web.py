@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -115,6 +115,23 @@ def pagina_cadastrar_ponto(request: Request):
     return render(request, "cadastrar_ponto.html")
 
 
+@router.get("/pontos", response_class=HTMLResponse)
+def listar_pontos(request: Request, db: Session = Depends(get_db)):
+    return render(
+        request,
+        "pontos.html",
+        {
+            "pontos": services.listar_pontos(db),
+            "sucesso": "Ponto de coleta removido com sucesso."
+            if request.query_params.get("removido")
+            else None,
+            "erro": "Ponto de coleta não encontrado."
+            if request.query_params.get("nao_encontrado")
+            else None,
+        },
+    )
+
+
 @router.post("/pontos/novo", response_class=HTMLResponse)
 def cadastrar_ponto(
     request: Request,
@@ -123,6 +140,10 @@ def cadastrar_ponto(
     bairro: str = Form(...),
     cidade: str = Form(...),
     tipo_residuo_aceito: str = Form(...),
+    telefone: str = Form(""),
+    horario_funcionamento: str = Form(""),
+    observacao: str = Form(""),
+    fonte_dados: str = Form(""),
     db: Session = Depends(get_db),
 ):
     dados = {
@@ -131,6 +152,10 @@ def cadastrar_ponto(
         "bairro": bairro,
         "cidade": cidade,
         "tipo_residuo_aceito": tipo_residuo_aceito,
+        "telefone": telefone,
+        "horario_funcionamento": horario_funcionamento,
+        "observacao": observacao,
+        "fonte_dados": fonte_dados,
     }
 
     try:
@@ -152,6 +177,15 @@ def cadastrar_ponto(
             "sucesso": f"Ponto de coleta '{ponto.nome_local}' cadastrado com sucesso.",
         },
     )
+
+
+@router.post("/pontos/{ponto_id}/remover")
+def remover_ponto(ponto_id: int, db: Session = Depends(get_db)):
+    ponto = services.remover_ponto_coleta(db, ponto_id)
+    if not ponto:
+        return RedirectResponse("/pontos?nao_encontrado=1", status_code=303)
+
+    return RedirectResponse("/pontos?removido=1", status_code=303)
 
 
 @router.get("/historico", response_class=HTMLResponse)

@@ -6,6 +6,24 @@ from sqlalchemy.orm import Session
 from app.models import Categoria, Consulta, PontoColeta, Residuo
 
 
+SINONIMOS_RESIDUOS = {
+    "oleo de cozinha": ["oleo de cozinha", "gordura usada", "gordura pos-consumo"],
+    "lixo eletronico": ["lixo eletronico", "eletroeletronicos", "eletronicos"],
+    "vidro": ["vidro", "materiais reciclaveis", "reciclaveis"],
+    "calica": ["calica", "entulho", "residuos de construcao"],
+    "madeira": ["madeira", "moveis"],
+    "movel inservivel": ["movel", "moveis", "mobiliario"],
+    "residuo vegetal": ["residuo vegetal", "poda", "jardinagem"],
+}
+
+SINONIMOS_CATEGORIAS = {
+    "residuo reciclavel": ["materiais reciclaveis", "reciclaveis", "vidro"],
+    "residuo eletronico": ["eletroeletronicos", "eletronicos", "lixo eletronico"],
+    "residuo de construcao civil": ["calica", "madeira", "entulho", "moveis"],
+    "residuo vegetal": ["residuo vegetal", "poda", "jardinagem"],
+}
+
+
 def limpar_texto(valor: str | None) -> str:
     return (valor or "").strip()
 
@@ -23,15 +41,18 @@ def listar_residuos(db: Session) -> list[Residuo]:
     return list(db.scalars(select(Residuo).order_by(Residuo.nome)).all())
 
 
-def listar_pontos(db: Session) -> list[PontoColeta]:
-    return list(db.scalars(select(PontoColeta).order_by(PontoColeta.nome_local)).all())
+def listar_pontos(db: Session, incluir_inativos: bool = False) -> list[PontoColeta]:
+    query = select(PontoColeta).order_by(PontoColeta.nome_local)
+    if not incluir_inativos:
+        query = query.where(PontoColeta.ativo.is_(True))
+    return list(db.scalars(query).all())
 
 
 def listar_historico(db: Session) -> list[Consulta]:
     return list(db.scalars(select(Consulta).order_by(Consulta.data_consulta.desc())).all())
 
 
-def obter_ou_criar_categoria(
+def get_or_create_categoria(
     db: Session,
     nome: str,
     descricao: str | None = None,
@@ -41,15 +62,36 @@ def obter_ou_criar_categoria(
         raise ValueError("Informe uma categoria válida.")
 
     nome_normalizado = normalizar_busca(nome_limpo)
+    descricao_limpa = limpar_texto(descricao) or None
+
     for categoria in listar_categorias(db):
         if normalizar_busca(categoria.nome) == nome_normalizado:
+            if descricao_limpa and categoria.descricao != descricao_limpa:
+                categoria.descricao = descricao_limpa
+                db.commit()
+                db.refresh(categoria)
             return categoria
 
-    categoria = Categoria(nome=nome_limpo, descricao=limpar_texto(descricao) or None)
+    categoria = Categoria(nome=nome_limpo, descricao=descricao_limpa)
     db.add(categoria)
     db.commit()
     db.refresh(categoria)
     return categoria
+
+
+obter_ou_criar_categoria = get_or_create_categoria
+
+
+def buscar_residuo_exato(db: Session, nome: str) -> Residuo | None:
+    termo = normalizar_busca(nome)
+    if not termo:
+        return None
+
+    for residuo in listar_residuos(db):
+        if normalizar_busca(residuo.nome) == termo:
+            return residuo
+
+    return None
 
 
 def buscar_residuo_por_nome(db: Session, nome: str) -> Residuo | None:
@@ -70,18 +112,45 @@ def buscar_residuo_por_nome(db: Session, nome: str) -> Residuo | None:
     return None
 
 
+def get_or_create_residuo(db: Session, dados: dict[str, str]) -> Residuo:
+    nome = limpar_texto(dados.get("nome"))
+    if not nome:
+        raise ValueError("Informe o nome do resíduo.")
+
+    categoria = get_or_create_categoria(db, dados.get("categoria", ""))
+    residuo = buscar_residuo_exato(db, nome)
+    campos = {
+        "nome": nome,
+        "categoria_id": categoria.id,
+        "orientacao_descarte": limpar_texto(dados.get("orientacao_descarte")),
+        "risco_ambiental": limpar_texto(dados.get("risco_ambiental")),
+        "mensagem_educativa": limpar_texto(dados.get("mensagem_educativa")),
+    }
+
+    if not campos["orientacao_descarte"] or not campos["risco_ambiental"] or not campos["mensagem_educativa"]:
+        raise ValueError("Preencha todos os campos obrigatórios do resíduo.")
+
+    if residuo:
+        for campo, valor in campos.items():
+            setattr(residuo, campo, valor)
+    else:
+        residuo = Residuo(**campos)
+        db.add(residuo)
+
+    db.commit()
+    db.refresh(residuo)
+    return residuo
+
+
 def criar_residuo(db: Session, dados: dict[str, str]) -> Residuo:
     nome = limpar_texto(dados.get("nome"))
     if not nome:
         raise ValueError("Informe o nome do resíduo.")
 
-    if buscar_residuo_por_nome(db, nome) and any(
-        normalizar_busca(residuo.nome) == normalizar_busca(nome)
-        for residuo in listar_residuos(db)
-    ):
+    if buscar_residuo_exato(db, nome):
         raise ValueError("Já existe um resíduo cadastrado com esse nome.")
 
-    categoria = obter_ou_criar_categoria(db, dados.get("categoria", ""))
+    categoria = get_or_create_categoria(db, dados.get("categoria", ""))
 
     residuo = Residuo(
         nome=nome,
@@ -107,10 +176,16 @@ def criar_ponto_coleta(db: Session, dados: dict[str, str]) -> PontoColeta:
         "bairro": limpar_texto(dados.get("bairro")),
         "cidade": limpar_texto(dados.get("cidade")),
         "tipo_residuo_aceito": limpar_texto(dados.get("tipo_residuo_aceito")),
+        "telefone": limpar_texto(dados.get("telefone")) or None,
+        "horario_funcionamento": limpar_texto(dados.get("horario_funcionamento")) or None,
+        "observacao": limpar_texto(dados.get("observacao")) or None,
+        "fonte_dados": limpar_texto(dados.get("fonte_dados")) or "Cadastro manual",
+        "ativo": True,
     }
 
-    if any(not valor for valor in campos.values()):
-        raise ValueError("Preencha todos os campos do ponto de coleta.")
+    obrigatorios = ["nome_local", "endereco", "bairro", "cidade", "tipo_residuo_aceito"]
+    if any(not campos[campo] for campo in obrigatorios):
+        raise ValueError("Preencha todos os campos obrigatórios do ponto de coleta.")
 
     ponto = PontoColeta(**campos)
     db.add(ponto)
@@ -119,22 +194,94 @@ def criar_ponto_coleta(db: Session, dados: dict[str, str]) -> PontoColeta:
     return ponto
 
 
+def buscar_ponto_por_id(db: Session, ponto_id: int) -> PontoColeta | None:
+    return db.get(PontoColeta, ponto_id)
+
+
+def buscar_ponto_por_nome(db: Session, nome_local: str) -> PontoColeta | None:
+    nome_normalizado = normalizar_busca(nome_local)
+    if not nome_normalizado:
+        return None
+
+    for ponto in listar_pontos(db, incluir_inativos=True):
+        if normalizar_busca(ponto.nome_local) == nome_normalizado:
+            return ponto
+
+    return None
+
+
+def upsert_ponto_coleta(db: Session, dados: dict[str, str | bool]) -> PontoColeta:
+    campos = {
+        "nome_local": limpar_texto(str(dados.get("nome_local") or "")),
+        "endereco": limpar_texto(str(dados.get("endereco") or "")),
+        "bairro": limpar_texto(str(dados.get("bairro") or "")),
+        "cidade": limpar_texto(str(dados.get("cidade") or "")),
+        "tipo_residuo_aceito": limpar_texto(str(dados.get("tipo_residuo_aceito") or "")),
+        "telefone": limpar_texto(str(dados.get("telefone") or "")) or None,
+        "horario_funcionamento": limpar_texto(str(dados.get("horario_funcionamento") or "")) or None,
+        "observacao": limpar_texto(str(dados.get("observacao") or "")) or None,
+        "fonte_dados": limpar_texto(str(dados.get("fonte_dados") or "")) or "Cadastro manual",
+        "ativo": bool(dados.get("ativo", True)),
+    }
+
+    obrigatorios = ["nome_local", "endereco", "bairro", "cidade", "tipo_residuo_aceito"]
+    if any(not campos[campo] for campo in obrigatorios):
+        raise ValueError("Preencha todos os campos obrigatórios do ponto de coleta.")
+
+    ponto = buscar_ponto_por_nome(db, str(campos["nome_local"]))
+    if ponto:
+        for campo, valor in campos.items():
+            if campo == "ativo" and ponto.ativo is False:
+                continue
+            setattr(ponto, campo, valor)
+    else:
+        ponto = PontoColeta(**campos)
+        db.add(ponto)
+
+    db.commit()
+    db.refresh(ponto)
+    return ponto
+
+
+def remover_ponto_coleta(db: Session, ponto_id: int) -> PontoColeta | None:
+    ponto = buscar_ponto_por_id(db, ponto_id)
+    if not ponto:
+        return None
+
+    ponto.ativo = False
+    db.commit()
+    db.refresh(ponto)
+    return ponto
+
+
+def palavras_chave_para_residuo(residuo: Residuo) -> set[str]:
+    nome = normalizar_busca(residuo.nome)
+    categoria = normalizar_busca(residuo.categoria.nome)
+    palavras = {nome, categoria}
+
+    palavras.update(SINONIMOS_RESIDUOS.get(nome, []))
+    palavras.update(SINONIMOS_CATEGORIAS.get(categoria, []))
+
+    for termo in [nome, categoria]:
+        palavras.update(
+            parte for parte in termo.replace(",", " ").split() if len(parte) >= 5
+        )
+
+    return {normalizar_busca(palavra) for palavra in palavras if normalizar_busca(palavra)}
+
+
 def buscar_pontos_compativeis(
     db: Session,
     residuo: Residuo,
     localizacao_usuario: str | None = None,
 ) -> list[PontoColeta]:
-    residuo_nome = normalizar_busca(residuo.nome)
-    categoria_nome = normalizar_busca(residuo.categoria.nome)
+    palavras_chave = palavras_chave_para_residuo(residuo)
     localizacao = normalizar_busca(localizacao_usuario)
     pontos_compativeis: list[PontoColeta] = []
 
     for ponto in listar_pontos(db):
         tipo_aceito = normalizar_busca(ponto.tipo_residuo_aceito)
-        aceita_residuo = residuo_nome in tipo_aceito or tipo_aceito in residuo_nome
-        aceita_categoria = categoria_nome and categoria_nome in tipo_aceito
-
-        if not aceita_residuo and not aceita_categoria:
+        if not any(palavra in tipo_aceito for palavra in palavras_chave):
             continue
 
         if localizacao:
@@ -215,4 +362,3 @@ def relatorio_residuos_mais_consultados(db: Session) -> list[dict[str, int | str
         agrupado.values(),
         key=lambda item: (-int(item["total_consultas"]), str(item["nome_residuo"]).casefold()),
     )
-

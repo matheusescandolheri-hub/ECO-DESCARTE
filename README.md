@@ -1,6 +1,8 @@
 # EcoDescarta
 
-EcoDescarta é uma primeira versão de sistema web para orientar o descarte consciente de resíduos. A aplicação permite consultar orientações, registrar histórico, cadastrar resíduos, cadastrar pontos de coleta e visualizar um relatório simples dos itens mais consultados.
+EcoDescarta é uma aplicação web acadêmica para orientar o descarte consciente de resíduos. O sistema permite consultar um resíduo, visualizar a orientação de descarte, entender o risco ambiental e encontrar pontos de coleta compatíveis.
+
+Esta versão também inclui uma base inicial mais realista com Ecopontos de Curitiba cadastrados a partir de dados públicos da Prefeitura de Curitiba.
 
 ## Tecnologias
 
@@ -10,75 +12,155 @@ EcoDescarta é uma primeira versão de sistema web para orientar o descarte cons
 - SQLAlchemy
 - SQLite
 - Jinja2 Templates
-- HTML e CSS
+- HTML
+- CSS próprio
 
-## Como executar
-
-1. Crie e ative um ambiente virtual, se desejar.
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-```
-
-2. Instale as dependências.
+## Como Executar
 
 ```bash
 pip install -r requirements.txt
-```
-
-3. Inicie a aplicação.
-
-```bash
 uvicorn app.main:app --reload
 ```
 
-4. Acesse no navegador.
+Acesse:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-Na primeira execução, o arquivo `eco_descarta.db` será criado automaticamente na raiz do projeto e receberá os dados iniciais.
+Na primeira execução, o banco `eco_descarta.db` é criado automaticamente na raiz do projeto.
 
-## Páginas web
+## Funcionalidades
 
-- `/` - Página inicial
-- `/consulta` - Consulta de orientação de descarte
-- `/residuos/novo` - Cadastro de resíduos
-- `/pontos/novo` - Cadastro de pontos de coleta
-- `/historico` - Histórico de consultas
-- `/relatorio` - Relatório de resíduos mais consultados
+- Consulta de resíduos por nome.
+- Exibição de categoria, orientação de descarte, risco ambiental e mensagem educativa.
+- Busca de pontos de coleta compatíveis com o resíduo consultado.
+- Cadastro de novos resíduos.
+- Cadastro de novos pontos de coleta.
+- Listagem de pontos de coleta ativos.
+- Remoção lógica de pontos de coleta.
+- Histórico de consultas.
+- Relatório simples dos resíduos mais consultados.
+- Endpoints JSON para integração futura.
 
-## Endpoints JSON
+## Rotas Web
+
+- `GET /` - Página inicial.
+- `GET /consulta` - Formulário de consulta.
+- `POST /consulta` - Resultado da consulta e registro no histórico.
+- `GET /residuos/novo` - Cadastro de resíduo.
+- `POST /residuos/novo` - Salva novo resíduo.
+- `GET /pontos` - Lista pontos de coleta ativos.
+- `GET /pontos/novo` - Cadastro de ponto de coleta.
+- `POST /pontos/novo` - Salva novo ponto de coleta.
+- `POST /pontos/{ponto_id}/remover` - Marca um ponto de coleta como inativo.
+- `GET /historico` - Histórico de consultas.
+- `GET /relatorio` - Relatório de resíduos mais consultados.
+
+## Endpoints API
 
 - `GET /api/residuos`
 - `POST /api/residuos`
 - `GET /api/pontos`
+- `GET /api/pontos?incluir_inativos=true`
 - `POST /api/pontos`
+- `DELETE /api/pontos/{ponto_id}`
 - `GET /api/consultas`
 - `GET /api/relatorio`
 
-Exemplo de cadastro de resíduo pela API:
+Resposta esperada ao remover um ponto pela API:
 
 ```json
 {
-  "nome": "Lâmpada",
-  "categoria": "Resíduo perigoso",
-  "orientacao_descarte": "Leve a lâmpada a pontos de coleta preparados para esse material.",
-  "risco_ambiental": "Alto",
-  "mensagem_educativa": "Lâmpadas podem conter substâncias que exigem descarte cuidadoso."
+  "success": true,
+  "message": "Ponto de coleta removido com sucesso.",
+  "id": 1
 }
 ```
 
-## Organização
+## Dados Mock e Seed
 
-A aplicação separa responsabilidades em módulos:
+A seed inicial cadastra categorias, resíduos e pontos de coleta. Ela é idempotente: ao reiniciar a aplicação, os dados não são duplicados.
 
-- `app/models.py` define as tabelas SQLAlchemy.
-- `app/schemas.py` define os modelos Pydantic usados pela API.
-- `app/services.py` concentra regras de negócio reutilizadas por web e API.
-- `app/seed.py` popula categorias, resíduos e pontos iniciais.
-- `app/routes/web.py` contém as páginas renderizadas com Jinja2.
-- `app/routes/api.py` contém os endpoints JSON.
+Categorias iniciais:
 
+- Resíduo perigoso
+- Resíduo reciclável
+- Resíduo eletrônico
+- Resíduo doméstico especial
+- Resíduo de construção civil
+- Resíduo vegetal
+
+Resíduos iniciais:
+
+- Pilha
+- Bateria
+- Óleo de cozinha
+- Medicamento vencido
+- Vidro
+- Lixo eletrônico
+- Caliça
+- Madeira
+- Móvel inservível
+- Resíduo vegetal
+
+## Ecopontos de Curitiba
+
+Os pontos de coleta iniciais são baseados em dados públicos da Prefeitura de Curitiba sobre Ecopontos para descarte correto de resíduos.
+
+Fonte usada na seed:
+
+```text
+Prefeitura de Curitiba - Ecopontos - Descarte correto de resíduos
+```
+
+Os Ecopontos cadastrados incluem unidades como Caiuá, Cajuru, CIC, Érico Veríssimo, Guaçuí, Icaraí, Jandaia, Metropolitano, Sambaqui, Vila Nova, Vila Verde, Campo de Santana e Parque Gomm.
+
+## Remoção de Pontos de Coleta
+
+A remoção é lógica. O registro não é apagado do banco: o campo `ativo` passa para `False`.
+
+Na interface web:
+
+1. Acesse `/pontos`.
+2. Clique em `Remover`.
+3. O ponto deixa de aparecer na listagem padrão.
+
+Na API:
+
+```bash
+curl -X DELETE http://127.0.0.1:8000/api/pontos/1
+```
+
+Por padrão, `GET /api/pontos` retorna apenas pontos ativos. Para visualizar também os inativos:
+
+```text
+GET /api/pontos?incluir_inativos=true
+```
+
+## Banco Local
+
+Esta versão inclui uma atualização simples de schema para adicionar novas colunas em bancos locais antigos.
+
+Se preferir recriar tudo do zero em ambiente de desenvolvimento:
+
+1. Pare o servidor.
+2. Remova o arquivo `eco_descarta.db`.
+3. Suba novamente a aplicação.
+
+```bash
+uvicorn app.main:app --reload
+```
+
+O banco será criado novamente com a seed atualizada.
+
+## Organização do Projeto
+
+- `app/models.py` - Modelos SQLAlchemy.
+- `app/schemas.py` - Schemas Pydantic da API.
+- `app/services.py` - Regras de negócio e funções reutilizáveis.
+- `app/seed.py` - Dados iniciais idempotentes.
+- `app/routes/web.py` - Rotas HTML com Jinja2.
+- `app/routes/api.py` - Endpoints JSON.
+- `templates/` - Páginas HTML.
+- `static/style.css` - Estilos da interface.

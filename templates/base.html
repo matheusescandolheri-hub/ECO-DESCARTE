@@ -14,7 +14,7 @@
                 <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Início</a>
                 <a href="/consulta" class="{% if request.url.path == '/consulta' %}active{% endif %}">Consulta</a>
                 <a href="/residuos/novo" class="{% if request.url.path.startswith('/residuos') %}active{% endif %}">Resíduos</a>
-                <a href="/pontos/novo" class="{% if request.url.path.startswith('/pontos') %}active{% endif %}">Pontos</a>
+                <a href="/pontos" class="{% if request.url.path.startswith('/pontos') %}active{% endif %}">Pontos de Coleta</a>
                 <a href="/historico" class="{% if request.url.path == '/historico' %}active{% endif %}">Histórico</a>
                 <a href="/relatorio" class="{% if request.url.path == '/relatorio' %}active{% endif %}">Relatório</a>
             </nav>
@@ -30,4 +30,3 @@
     </footer>
 </body>
 </html>
-

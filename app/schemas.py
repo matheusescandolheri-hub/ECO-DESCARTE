@@ -36,9 +36,13 @@ class PontoColetaCreate(BaseModel):
     bairro: str = Field(..., min_length=2, max_length=100)
     cidade: str = Field(..., min_length=2, max_length=100)
     tipo_residuo_aceito: str = Field(..., min_length=2, max_length=160)
+    telefone: str | None = Field(default=None, max_length=40)
+    horario_funcionamento: str | None = Field(default=None, max_length=160)
+    observacao: str | None = None
+    fonte_dados: str | None = Field(default="Cadastro manual", max_length=180)
 
 
-class PontoColetaOut(BaseModel):
+class PontoColetaRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -47,6 +51,20 @@ class PontoColetaOut(BaseModel):
     bairro: str
     cidade: str
     tipo_residuo_aceito: str
+    telefone: str | None = None
+    horario_funcionamento: str | None = None
+    observacao: str | None = None
+    fonte_dados: str | None = None
+    ativo: bool
+
+
+class PontoColetaDeleteResponse(BaseModel):
+    success: bool
+    message: str
+    id: int
+
+
+PontoColetaOut = PontoColetaRead
 
 
 class ConsultaOut(BaseModel):
@@ -61,4 +79,3 @@ class ConsultaOut(BaseModel):
 class RelatorioItem(BaseModel):
     nome_residuo: str
     total_consultas: int
-

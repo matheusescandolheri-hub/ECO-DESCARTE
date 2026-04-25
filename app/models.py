@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -38,6 +38,11 @@ class PontoColeta(Base):
     bairro: Mapped[str] = mapped_column(String(100), nullable=False)
     cidade: Mapped[str] = mapped_column(String(100), nullable=False)
     tipo_residuo_aceito: Mapped[str] = mapped_column(String(160), nullable=False)
+    telefone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    horario_funcionamento: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    observacao: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fonte_dados: Mapped[str | None] = mapped_column(String(180), nullable=True)
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
 class Consulta(Base):
@@ -52,4 +57,3 @@ class Consulta(Base):
         nullable=False,
     )
     localizacao_usuario: Mapped[str | None] = mapped_column(String(140), nullable=True)
-

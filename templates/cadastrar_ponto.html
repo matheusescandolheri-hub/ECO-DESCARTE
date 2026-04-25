@@ -19,7 +19,7 @@
 
     <form action="/pontos/novo" method="post">
         <label for="nome_local">Nome do local</label>
-        <input id="nome_local" name="nome_local" type="text" value="{{ dados.nome_local if dados else '' }}" placeholder="Ex.: EcoPonto Bairro Verde" required>
+        <input id="nome_local" name="nome_local" type="text" value="{{ dados.nome_local if dados else '' }}" placeholder="Ex.: Ecoponto Bairro Verde" required>
 
         <label for="endereco">Endereço</label>
         <input id="endereco" name="endereco" type="text" value="{{ dados.endereco if dados else '' }}" placeholder="Rua, número" required>
@@ -38,11 +38,27 @@
         <label for="tipo_residuo_aceito">Tipo de resíduo aceito</label>
         <input id="tipo_residuo_aceito" name="tipo_residuo_aceito" type="text" value="{{ dados.tipo_residuo_aceito if dados else '' }}" placeholder="Ex.: óleo de cozinha, pilha" required>
 
+        <div class="form-grid">
+            <div>
+                <label for="telefone">Telefone</label>
+                <input id="telefone" name="telefone" type="text" value="{{ dados.telefone if dados else '' }}" placeholder="Opcional">
+            </div>
+            <div>
+                <label for="horario_funcionamento">Horário de funcionamento</label>
+                <input id="horario_funcionamento" name="horario_funcionamento" type="text" value="{{ dados.horario_funcionamento if dados else '' }}" placeholder="Opcional">
+            </div>
+        </div>
+
+        <label for="observacao">Observação</label>
+        <textarea id="observacao" name="observacao" rows="3" placeholder="Opcional">{{ dados.observacao if dados else '' }}</textarea>
+
+        <label for="fonte_dados">Fonte dos dados</label>
+        <input id="fonte_dados" name="fonte_dados" type="text" value="{{ dados.fonte_dados if dados else '' }}" placeholder="Cadastro manual">
+
         <div class="form-actions">
             <button class="button button-primary" type="submit">Salvar ponto</button>
-            <a class="button button-secondary" href="/">Cancelar</a>
+            <a class="button button-secondary" href="/pontos">Cancelar</a>
         </div>
     </form>
 </section>
 {% endblock %}
-

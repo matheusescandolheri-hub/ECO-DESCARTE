@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Pontos de Coleta{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Coleta</p>
+    <h1>Pontos de coleta</h1>
+    <p>Locais ativos cadastrados para receber resíduos e orientar o descarte correto.</p>
+</section>
+
+<section class="section-title-row">
+    <div>
+        {% if sucesso %}
+            <div class="alert alert-success compact-alert">{{ sucesso }}</div>
+        {% endif %}
+        {% if erro %}
+            <div class="alert alert-error compact-alert">{{ erro }}</div>
+        {% endif %}
+    </div>
+    <a class="button button-primary" href="/pontos/novo">Novo ponto</a>
+</section>
+
+{% if pontos %}
+    <section class="points-grid" aria-label="Pontos de coleta ativos">
+        {% for ponto in pontos %}
+            <article class="point-card point-card-detailed">
+                <div class="point-card-header">
+                    <div>
+                        <strong>{{ ponto.nome_local }}</strong>
+                        <span>{{ ponto.bairro }} · {{ ponto.cidade }}</span>
+                    </div>
+                    <form action="/pontos/{{ ponto.id }}/remover" method="post">
+                        <button class="button button-danger" type="submit">Remover</button>
+                    </form>
+                </div>
+
+                <dl class="point-details">
+                    <div>
+                        <dt>Endereço</dt>
+                        <dd>{{ ponto.endereco }}</dd>
+                    </div>
+                    <div>
+                        <dt>Resíduos aceitos</dt>
+                        <dd>{{ ponto.tipo_residuo_aceito }}</dd>
+                    </div>
+                    <div>
+                        <dt>Telefone</dt>
+                        <dd>{{ ponto.telefone or "Não informado" }}</dd>
+                    </div>
+                    <div>
+                        <dt>Horário</dt>
+                        <dd>{{ ponto.horario_funcionamento or "Não informado" }}</dd>
+                    </div>
+                    {% if ponto.observacao %}
+                        <div>
+                            <dt>Observação</dt>
+                            <dd>{{ ponto.observacao }}</dd>
+                        </div>
+                    {% endif %}
+                </dl>
+            </article>
+        {% endfor %}
+    </section>
+{% else %}
+    <section class="panel">
+        <div class="empty-state">Nenhum ponto de coleta ativo foi encontrado.</div>
+    </section>
+{% endif %}
+{% endblock %}
