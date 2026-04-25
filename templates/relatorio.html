@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Relatório{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Relatório</p>
+    <h1>Resíduos mais consultados</h1>
+    <p>Resumo simples com a quantidade de buscas registradas por resíduo.</p>
+</section>
+
+<section class="panel table-panel">
+    {% if itens %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Resíduo</th>
+                        <th>Consultas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ item.nome_residuo }}</td>
+                            <td><strong>{{ item.total_consultas }}</strong></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">O relatório será preenchido após as primeiras consultas.</div>
+    {% endif %}
+</section>
+{% endblock %}
+

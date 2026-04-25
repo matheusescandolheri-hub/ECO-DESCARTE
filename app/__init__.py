@@ -1,0 +1,2 @@
+"""EcoDescarta application package."""
+

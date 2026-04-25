@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Consulta{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Consulta</p>
+    <h1>Orientação de descarte</h1>
+    <p>Informe o resíduo para encontrar categoria, risco ambiental, orientação e pontos de coleta.</p>
+</section>
+
+<section class="panel form-panel">
+    {% if erro %}
+        <div class="alert alert-error">{{ erro }}</div>
+    {% endif %}
+
+    <form action="/consulta" method="post">
+        <label for="nome_residuo">Nome do resíduo</label>
+        <input
+            id="nome_residuo"
+            name="nome_residuo"
+            type="text"
+            value="{{ nome_residuo or '' }}"
+            placeholder="Ex.: bateria"
+            required
+        >
+
+        <label for="localizacao_usuario">Cidade ou bairro</label>
+        <input
+            id="localizacao_usuario"
+            name="localizacao_usuario"
+            type="text"
+            value="{{ localizacao_usuario or '' }}"
+            placeholder="Opcional"
+        >
+
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Consultar</button>
+            <a class="button button-secondary" href="/">Voltar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
+

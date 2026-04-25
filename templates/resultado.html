@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Resultado{% endblock %}
+
+{% block content %}
+{% if encontrado %}
+<section class="page-heading">
+    <p class="eyebrow">Resultado da consulta</p>
+    <h1>{{ residuo.nome }}</h1>
+    <p>{{ residuo.mensagem_educativa }}</p>
+</section>
+
+<section class="result-grid">
+    <article class="info-card">
+        <span class="info-label">Categoria</span>
+        <strong>{{ residuo.categoria.nome }}</strong>
+        <p>{{ residuo.categoria.descricao or "Categoria cadastrada no sistema." }}</p>
+    </article>
+    <article class="info-card">
+        <span class="info-label">Risco ambiental</span>
+        <strong class="risk-badge">{{ residuo.risco_ambiental }}</strong>
+        <p>Quanto maior o risco, maior a atenção necessária no armazenamento e transporte.</p>
+    </article>
+    <article class="info-card wide">
+        <span class="info-label">Orientação correta</span>
+        <p class="orientation">{{ residuo.orientacao_descarte }}</p>
+    </article>
+</section>
+
+<section class="section-block">
+    <div class="section-title-row">
+        <div>
+            <p class="eyebrow">Coleta</p>
+            <h2>Pontos compatíveis</h2>
+        </div>
+        <a class="button button-secondary" href="/pontos/novo">Cadastrar ponto</a>
+    </div>
+
+    {% if pontos %}
+        <div class="point-list">
+            {% for ponto in pontos %}
+                <article class="point-card">
+                    <strong>{{ ponto.nome_local }}</strong>
+                    <span>{{ ponto.endereco }}</span>
+                    <span>{{ ponto.bairro }} · {{ ponto.cidade }}</span>
+                    <small>Aceita: {{ ponto.tipo_residuo_aceito }}</small>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            Nenhum ponto compatível foi encontrado{% if localizacao_usuario %} para "{{ localizacao_usuario }}"{% endif %}.
+            Cadastre um novo ponto de coleta para ampliar a base.
+        </div>
+    {% endif %}
+</section>
+{% else %}
+<section class="page-heading">
+    <p class="eyebrow">Resultado da consulta</p>
+    <h1>Resíduo não encontrado</h1>
+    <p>
+        Não há orientação cadastrada para "{{ termo }}". Você pode cadastrar esse resíduo e registrar as instruções corretas.
+    </p>
+</section>
+
+<section class="panel">
+    <div class="action-row">
+        <a class="button button-primary" href="/residuos/novo">Cadastrar resíduo</a>
+        <a class="button button-secondary" href="/consulta">Nova consulta</a>
+    </div>
+</section>
+{% endif %}
+
+<section class="bottom-actions">
+    <a class="button button-primary" href="/consulta">Nova consulta</a>
+    <a class="button button-secondary" href="/historico">Ver histórico</a>
+</section>
+{% endblock %}
+

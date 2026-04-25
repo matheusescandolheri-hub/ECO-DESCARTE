@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Novo ponto{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Cadastro</p>
+    <h1>Novo ponto de coleta</h1>
+    <p>Cadastre locais que recebam resíduos específicos para descarte ou reciclagem.</p>
+</section>
+
+<section class="panel form-panel">
+    {% if sucesso %}
+        <div class="alert alert-success">{{ sucesso }}</div>
+    {% endif %}
+    {% if erro %}
+        <div class="alert alert-error">{{ erro }}</div>
+    {% endif %}
+
+    <form action="/pontos/novo" method="post">
+        <label for="nome_local">Nome do local</label>
+        <input id="nome_local" name="nome_local" type="text" value="{{ dados.nome_local if dados else '' }}" placeholder="Ex.: EcoPonto Bairro Verde" required>
+
+        <label for="endereco">Endereço</label>
+        <input id="endereco" name="endereco" type="text" value="{{ dados.endereco if dados else '' }}" placeholder="Rua, número" required>
+
+        <div class="form-grid">
+            <div>
+                <label for="bairro">Bairro</label>
+                <input id="bairro" name="bairro" type="text" value="{{ dados.bairro if dados else '' }}" required>
+            </div>
+            <div>
+                <label for="cidade">Cidade</label>
+                <input id="cidade" name="cidade" type="text" value="{{ dados.cidade if dados else '' }}" required>
+            </div>
+        </div>
+
+        <label for="tipo_residuo_aceito">Tipo de resíduo aceito</label>
+        <input id="tipo_residuo_aceito" name="tipo_residuo_aceito" type="text" value="{{ dados.tipo_residuo_aceito if dados else '' }}" placeholder="Ex.: óleo de cozinha, pilha" required>
+
+        <div class="form-actions">
+            <button class="button button-primary" type="submit">Salvar ponto</button>
+            <a class="button button-secondary" href="/">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
+

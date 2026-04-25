@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Histórico{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">Consultas</p>
+    <h1>Histórico</h1>
+    <p>Registros ordenados da consulta mais recente para a mais antiga.</p>
+</section>
+
+<section class="panel table-panel">
+    {% if consultas %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Resíduo</th>
+                        <th>Data</th>
+                        <th>Localização</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for consulta in consultas %}
+                        <tr>
+                            <td>{{ consulta.nome_residuo }}</td>
+                            <td>{{ consulta.data_consulta.strftime("%d/%m/%Y %H:%M") }}</td>
+                            <td>{{ consulta.localizacao_usuario or "Não informada" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">Nenhuma consulta foi registrada ainda.</div>
+    {% endif %}
+</section>
+{% endblock %}
+

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}EcoDescarta · Início{% endblock %}
+
+{% block content %}
+<section class="home-grid">
+    <div class="intro-panel">
+        <p class="eyebrow">Sistema de descarte consciente</p>
+        <h1>Encontre o destino correto para seus resíduos.</h1>
+        <p class="intro-copy">
+            Consulte orientações ambientais, veja pontos de coleta compatíveis e mantenha um histórico organizado das buscas.
+        </p>
+        <div class="action-row">
+            <a class="button button-primary" href="/consulta">Consultar resíduo</a>
+            <a class="button button-secondary" href="/residuos/novo">Cadastrar resíduo</a>
+        </div>
+    </div>
+
+    <form class="quick-search panel" action="/consulta" method="post">
+        <h2>Consulta rápida</h2>
+        <label for="nome_residuo">Nome do resíduo</label>
+        <input id="nome_residuo" name="nome_residuo" type="text" placeholder="Ex.: pilha, vidro, óleo" required>
+
+        <label for="localizacao_usuario">Cidade ou bairro</label>
+        <input id="localizacao_usuario" name="localizacao_usuario" type="text" placeholder="Opcional">
+
+        <button class="button button-primary full" type="submit">Buscar orientação</button>
+    </form>
+</section>
+
+<section class="feature-grid" aria-label="Atalhos do sistema">
+    <a class="feature-card" href="/pontos/novo">
+        <strong>Pontos de coleta</strong>
+        <span>Cadastre locais que recebem resíduos específicos.</span>
+    </a>
+    <a class="feature-card" href="/historico">
+        <strong>Histórico</strong>
+        <span>Acompanhe as consultas realizadas no sistema.</span>
+    </a>
+    <a class="feature-card" href="/relatorio">
+        <strong>Relatório</strong>
+        <span>Veja quais resíduos aparecem com mais frequência.</span>
+    </a>
+</section>
+{% endblock %}
+

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EcoDescarta{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="nav-shell">
+            <a class="brand" href="/">EcoDescarta</a>
+            <nav class="main-nav" aria-label="Navegação principal">
+                <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Início</a>
+                <a href="/consulta" class="{% if request.url.path == '/consulta' %}active{% endif %}">Consulta</a>
+                <a href="/residuos/novo" class="{% if request.url.path.startswith('/residuos') %}active{% endif %}">Resíduos</a>
+                <a href="/pontos/novo" class="{% if request.url.path.startswith('/pontos') %}active{% endif %}">Pontos</a>
+                <a href="/historico" class="{% if request.url.path == '/historico' %}active{% endif %}">Histórico</a>
+                <a href="/relatorio" class="{% if request.url.path == '/relatorio' %}active{% endif %}">Relatório</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="page-shell">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p>EcoDescarta · Descarte consciente e informação ambiental acessível.</p>
+    </footer>
+</body>
+</html>
+
